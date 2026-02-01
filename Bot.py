@@ -2,8 +2,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ================= CONFIG =================
-TOKEN = "PASTE_NEW_BOT_TOKEN_HERE"   # <-- yahan apna NEW bot token paste karo
-BOT_USERNAME = "Shein1kcouponbot"   # without @
+TOKEN = "8597248235:AAEf3NmHUhV-MyRO_yMJwqxp96K1GhLxv0M"
+BOT_USERNAME = "Shein1kcouponbot"
 ADMIN_ID = 7397475374
 # =========================================
 
