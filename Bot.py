@@ -1,12 +1,12 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-TOKEN = "8597248235:AAEf3NmHUhV-MyRO_yMJwqxp96K1GhLxv0M"
+TOKEN = "PASTE_NEW_BOT_TOKEN_HERE"
 BOT_USERNAME = "Shein1kcouponbot"
 ADMIN_ID = 7397475374
 
 users = {}
-coupons = []   # simple list of coupon texts
+coupons = []          # list = stock
 admin_waiting_coupon = set()
 
 
@@ -33,11 +33,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👋 Welcome to SHEIN Coupon Bot\n\n"
         "/refer - Referral link\n"
         "/points - Your points\n"
-        "/redeem - Redeem coupon"
+        "/redeem - Redeem coupon\n"
+        "/stock - Check coupon stock"
     )
 
 
-# ---------------- USER ----------------
+# ---------------- USER COMMANDS ----------------
 async def refer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     link = f"https://t.me/{BOT_USERNAME}?start={uid}"
@@ -49,6 +50,12 @@ async def points(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"⭐ Your points: {users.get(uid, {}).get('points', 0)}")
 
 
+async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"🎟 Available coupons: {len(coupons)}"
+    )
+
+
 async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
 
@@ -57,11 +64,11 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not coupons:
-        await update.message.reply_text("❌ No coupon available")
+        await update.message.reply_text("❌ No coupon available right now")
         return
 
     users[uid]["points"] -= 50
-    coupon_text = coupons.pop(0)
+    coupon_text = coupons.pop(0)   # stock -1
 
     await update.message.reply_text(
         "🎉 *Great News! Your voucher has been assigned* 🎉\n\n"
@@ -70,7 +77,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# ---------------- ADMIN ----------------
+# ---------------- ADMIN PANEL ----------------
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
@@ -90,7 +97,8 @@ async def addcoupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_waiting_coupon.add(update.effective_user.id)
     await update.message.reply_text(
         "✍️ Ab coupon details bhejo.\n"
-        "Jo likhoge wahi user ko milega."
+        "Jo likhoge wahi user ko milega.\n\n"
+        "📦 Stock +1 automatically"
     )
 
 
@@ -98,10 +106,13 @@ async def receive_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
 
     if uid in admin_waiting_coupon:
-        coupons.append(update.message.text)
+        coupons.append(update.message.text)   # stock +1
         admin_waiting_coupon.remove(uid)
 
-        await update.message.reply_text("✅ Coupon successfully added")
+        await update.message.reply_text(
+            f"✅ Coupon added successfully\n"
+            f"📦 Current stock: {len(coupons)}"
+        )
 
 
 async def addpoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -124,7 +135,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"👥 Users: {len(users)}\n"
-        f"🎟 Coupons: {len(coupons)}"
+        f"🎟 Coupons stock: {len(coupons)}"
     )
 
 
@@ -136,6 +147,7 @@ def main():
     app.add_handler(CommandHandler("refer", refer))
     app.add_handler(CommandHandler("points", points))
     app.add_handler(CommandHandler("redeem", redeem))
+    app.add_handler(CommandHandler("stock", stock))
 
     app.add_handler(CommandHandler("admin", admin))
     app.add_handler(CommandHandler("addcoupon", addcoupon))
