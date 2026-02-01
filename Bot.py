@@ -2,7 +2,9 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 BOT_TOKEN = "8597248235:AAEf3NmHUhV-MyRO_yMJwqxp96K1GhLxv0M"
-
+ADMIN_ID = 7397475374
+BOT_ACTIVE = True
+COUPON_TEXT = "🎁 SHEIN ₹1000 Coupon\n\nRefer friends and earn points!"
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
     update.message.reply_text(
