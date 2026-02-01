@@ -1,121 +1,107 @@
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-# ================= CONFIG =================
 TOKEN = "8597248235:AAEf3NmHUhV-MyRO_yMJwqxp96K1GhLxv0M"
 BOT_USERNAME = "Shein1kcouponbot"
 ADMIN_ID = 7397475374
-# =========================================
 
-# In-memory storage
-users = {}     # {user_id: {"points": int}}
-coupons = {}   # {points: [coupon_objects]}
-
-
-def is_admin(user_id: int) -> bool:
-    return user_id == ADMIN_ID
+users = {}
+coupons = []   # simple list of coupon texts
+admin_waiting_coupon = set()
 
 
-# ---------------- USER COMMANDS ----------------
+def is_admin(uid):
+    return uid == ADMIN_ID
 
+
+# ---------------- START ----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+    uid = update.effective_user.id
 
-    if user_id not in users:
-        users[user_id] = {"points": 0}
+    if uid not in users:
+        users[uid] = {"points": 0}
 
-        # referral logic
         if context.args:
             try:
-                ref_id = int(context.args[0])
-                if ref_id != user_id and ref_id in users:
-                    users[ref_id]["points"] += 10
+                ref = int(context.args[0])
+                if ref != uid and ref in users:
+                    users[ref]["points"] += 10
             except:
                 pass
 
     await update.message.reply_text(
-        "👋 Welcome to SHEIN Coupon Bot 🎉\n\n"
-        "/refer - Get referral link\n"
-        "/points - Check points\n"
+        "👋 Welcome to SHEIN Coupon Bot\n\n"
+        "/refer - Referral link\n"
+        "/points - Your points\n"
         "/redeem - Redeem coupon"
     )
 
 
+# ---------------- USER ----------------
 async def refer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     link = f"https://t.me/{BOT_USERNAME}?start={uid}"
-
-    await update.message.reply_text(
-        f"🔗 Your referral link:\n{link}\n\n"
-        "Invite friends & earn 10 points per referral!"
-    )
+    await update.message.reply_text(f"🔗 Your referral link:\n{link}")
 
 
 async def points(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    pts = users.get(uid, {}).get("points", 0)
-    await update.message.reply_text(f"⭐ Your points: {pts}")
+    await update.message.reply_text(f"⭐ Your points: {users.get(uid, {}).get('points', 0)}")
 
 
 async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    user = users.get(uid)
 
-    if not user:
-        await update.message.reply_text("❌ Please use /start first")
+    if users.get(uid, {}).get("points", 0) < 50:
+        await update.message.reply_text("❌ Not enough points (need 50)")
         return
 
-    for cost in sorted(coupons.keys()):
-        if user["points"] >= cost and coupons[cost]:
-            c = coupons[cost].pop(0)
-            user["points"] -= cost
+    if not coupons:
+        await update.message.reply_text("❌ No coupon available")
+        return
 
-            msg = (
-                "🎉 *Great News!* Your voucher has been assigned 🎉\n\n"
-                f"*{c['title']}*\n\n"
-                f"🔑 *Code:* `{c['code']}`\n\n"
-                f"💰 *Amount:* {c['amount']}\n"
-                f"📦 *Type:* {c['type']}\n"
-                f"🛒 *Minimum Purchase:* {c['min_purchase']}\n"
-                f"⏰ *Expiry Date:* {c['expiry']}\n"
-                f"👤 *Assigned By:* {c['assigned_by']}"
-            )
+    users[uid]["points"] -= 50
+    coupon_text = coupons.pop(0)
 
-            await update.message.reply_text(msg, parse_mode="Markdown")
-            return
-
-    await update.message.reply_text("❌ Not enough points or no coupon available")
+    await update.message.reply_text(
+        "🎉 *Great News! Your voucher has been assigned* 🎉\n\n"
+        + coupon_text,
+        parse_mode="Markdown"
+    )
 
 
-# ---------------- ADMIN COMMANDS ----------------
-
-async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ---------------- ADMIN ----------------
+async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Admin only")
         return
 
     await update.message.reply_text(
         "🛠 ADMIN PANEL\n\n"
-        "/stats\n"
+        "/addcoupon - Add coupon\n"
         "/addpoints user_id points\n"
-        "/addcoupon points=50 title=Voucher#1 code=XXXX amount=1000 "
-        "type=Resin min=0 expiry=31-12-2026 by=Admin\n"
-        "/broadcast message"
+        "/stats"
     )
 
 
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def addcoupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    total_users = len(users)
-    total_points = sum(u["points"] for u in users.values())
-
+    admin_waiting_coupon.add(update.effective_user.id)
     await update.message.reply_text(
-        f"📊 BOT STATS\n\n"
-        f"👥 Users: {total_users}\n"
-        f"⭐ Total points: {total_points}"
+        "✍️ Ab coupon details bhejo.\n"
+        "Jo likhoge wahi user ko milega."
     )
+
+
+async def receive_coupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+
+    if uid in admin_waiting_coupon:
+        coupons.append(update.message.text)
+        admin_waiting_coupon.remove(uid)
+
+        await update.message.reply_text("✅ Coupon successfully added")
 
 
 async def addpoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -125,96 +111,39 @@ async def addpoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         uid = int(context.args[0])
         pts = int(context.args[1])
-
         users.setdefault(uid, {"points": 0})
         users[uid]["points"] += pts
-
-        await update.message.reply_text("✅ Points added successfully")
+        await update.message.reply_text("✅ Points added")
     except:
-        await update.message.reply_text(
-            "❌ Usage:\n/addpoints user_id points"
-        )
+        await update.message.reply_text("❌ /addpoints user_id points")
 
 
-async def addcoupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    try:
-        data = {}
-        for arg in context.args:
-            key, value = arg.split("=")
-            data[key] = value
-
-        points = int(data["points"])
-
-        coupon = {
-            "title": data["title"],
-            "code": data["code"],
-            "amount": data["amount"],
-            "type": data["type"],
-            "min_purchase": data["min"],
-            "expiry": data["expiry"],
-            "assigned_by": data["by"]
-        }
-
-        coupons.setdefault(points, []).append(coupon)
-
-        await update.message.reply_text(
-            "✅ Coupon added successfully with full details"
-        )
-
-    except:
-        await update.message.reply_text(
-            "❌ Wrong format!\n\n"
-            "Correct:\n"
-            "/addcoupon points=50 title=Voucher#1 code=XXXX amount=1000 "
-            "type=Resin min=0 expiry=31-12-2026 by=Admin"
-        )
-
-
-async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id):
-        return
-
-    if not context.args:
-        await update.message.reply_text(
-            "❌ Usage:\n/broadcast message"
-        )
-        return
-
-    msg = " ".join(context.args)
-    sent = 0
-
-    for uid in users:
-        try:
-            await context.bot.send_message(uid, msg)
-            sent += 1
-        except:
-            pass
-
-    await update.message.reply_text(f"📢 Sent to {sent} users")
+    await update.message.reply_text(
+        f"👥 Users: {len(users)}\n"
+        f"🎟 Coupons: {len(coupons)}"
+    )
 
 
 # ---------------- MAIN ----------------
-
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # user
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("refer", refer))
     app.add_handler(CommandHandler("points", points))
     app.add_handler(CommandHandler("redeem", redeem))
 
-    # admin
-    app.add_handler(CommandHandler("admin", admin_panel))
-    app.add_handler(CommandHandler("stats", stats))
-    app.add_handler(CommandHandler("addpoints", addpoints))
+    app.add_handler(CommandHandler("admin", admin))
     app.add_handler(CommandHandler("addcoupon", addcoupon))
-    app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(CommandHandler("addpoints", addpoints))
+    app.add_handler(CommandHandler("stats", stats))
 
-    print("🤖 Bot running...")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_coupon))
+
     app.run_polling()
 
 
