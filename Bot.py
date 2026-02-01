@@ -3,6 +3,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = os.getenv("BOT_TOKEN")
+BOT_USERNAME = "Shein1kCouponBot"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -18,8 +19,11 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def refer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    referral_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
+
     await update.message.reply_text(
-        "🔗 Refer friends and earn points!\n\nMore features coming soon 🔥"
+        f"🔗 Your referral link:\n\n{referral_link)"
     )
 
 def main():
