@@ -20,10 +20,10 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def refer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    referral_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
+    referral_link = "https://t.me/" + BOT_USERNAME + "?start=" + str(user_id)
 
     await update.message.reply_text(
-        f"🔗 Your referral link:\n\n{referral_link)"
+        "🔗 Your referral link:\n\n" + referral_link
     )
 
 def main():
