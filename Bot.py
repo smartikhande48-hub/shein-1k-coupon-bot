@@ -1,50 +1,36 @@
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
-
 import os
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 7397475374
-BOT_ACTIVE = True
-COUPON_TEXT = "🎁 SHEIN ₹1000 Coupon\n\nRefer friends and earn points!"
-def start(update: Update, context: CallbackContext):
-    user = update.effective_user
-    update.message.reply_text(
-        f"Hi {user.first_name} 👋\n\nWelcome to SHEIN Coupon Bot 🎉\n\nUse /help to see commands."
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+TOKEN = os.getenv("BOT_TOKEN")
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Hi!\n\nWelcome to SHEIN Coupon Bot 🎉\n\nUse /help to see commands."
     )
 
-def help_cmd(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "/start - Start bot\n"
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📌 Available Commands:\n\n"
+        "/start - Start the bot\n"
         "/help - Show help\n"
-        "/coupon - Get coupon info"
+        "/refer - Get referral info"
     )
 
-def coupon(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "🎁 SHEIN ₹1000 Coupon\n\n"
-        "Refer friends and earn points!\n"
-        "More features coming soon 🔥"
+async def refer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🔗 Refer friends and earn points!\n\nMore features coming soon 🔥"
     )
-def refer(update, context):
-    user = update.effective_user
-    bot_username = context.bot.username
-    refer_link = f"https://t.me/{bot_username}?start={user.id}"
-    update.message.reply_text(
-        "👥 Refer & Earn\n\n"
-        "Apna link share karo:\n"
-        f"{refer_link}\n\n"
-        "Friend start karega to reward milega 🔥"
-    )
+
 def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_cmd))
-    dp.add_handler(CommandHandler("coupon", coupon))
-dp.add_handler(CommandHandler("refer", refer))
-    updater.start_polling()
-    updater.idle()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("refer", refer))
+
+    print("Bot is running...")
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
