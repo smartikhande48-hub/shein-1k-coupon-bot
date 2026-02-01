@@ -24,7 +24,16 @@ def coupon(update: Update, context: CallbackContext):
         "Refer friends and earn points!\n"
         "More features coming soon 🔥"
     )
-
+def refer(update, context):
+    user = update.effective_user
+    bot_username = context.bot.username
+    refer_link = f"https://t.me/{bot_username}?start={user.id}"
+    update.message.reply_text(
+        "👥 Refer & Earn\n\n"
+        "Apna link share karo:\n"
+        f"{refer_link}\n\n"
+        "Friend start karega to reward milega 🔥"
+    )
 def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -32,7 +41,7 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help_cmd))
     dp.add_handler(CommandHandler("coupon", coupon))
-
+dp.add_handler(CommandHandler("refer", refer))
     updater.start_polling()
     updater.idle()
 
