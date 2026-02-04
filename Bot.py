@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-TOKEN = "PASTE_NEW_BOT_TOKEN_HERE"
-BOT_USERNAME = "Shein1kcouponbot"
-ADMIN_ID = 7397475374
+TOKEN = "8456892529:AAEGU-GAR1joqmCjq9Qjr5QDIN2q3uv8Y8k"
+BOT_USERNAME = "Lol_autobot"
+ADMIN_ID = 8456892529
 
 users = {}
 coupons = []          # list = stock
